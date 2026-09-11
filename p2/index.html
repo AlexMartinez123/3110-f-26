@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 2 - Company Directory</title>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 40px;
+    }
+    h1 {
+      color: #bb86fc;
+      text-align: center;
+    }
+    .instruction {
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    /* Section headings and totals */
+    .section-title {
+      color: #bb86fc;
+      max-width: 800px;
+      margin: 40px auto 16px auto;
+    }
+    .summary {
+      max-width: 800px;
+      margin: 16px auto 0 auto;
+      color: #b0b0b0;
+      font-weight: bold;
+    }
+
+    /* Containers where the JavaScript inserts the new divs */
+    #customer-container,
+    #product-container,
+    #office-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Styling for the cards rendered to the page */
+    .customer-card,
+    .product-card,
+    .office-card {
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
+    .customer-card:hover,
+    .product-card:hover,
+    .office-card:hover {
+      border-color: #555;
+    }
+    .selected,
+    .selected:hover {
+      border-color: #bb86fc;
+      background-color: #2a2238;
+    }
+    .customer-card h2,
+    .product-card h2,
+    .office-card h2 {
+      margin: 0 0 10px 0;
+      color: #03dac6;
+      font-size: 1.4rem;
+    }
+    .customer-card p,
+    .product-card p,
+    .office-card p {
+      margin: 5px 0;
+      color: #b0b0b0;
+    }
+    .status {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    /* Customer status colors */
+    .status-active { background-color: #1b5e20; color: #a5d6a7; }
+    .status-inactive { background-color: #b71c1c; color: #ef9a9a; }
+    .status-pending { background-color: #f57f17; color: #fff59d; }
+
+    /* Product status colors */
+    .status-in-stock { background-color: #1b5e20; color: #a5d6a7; }
+    .status-out-of-stock { background-color: #b71c1c; color: #ef9a9a; }
+    .status-low-stock { background-color: #f57f17; color: #fff59d; }
+
+    /* Office employee count badge */
+    .status-info { background-color: #0d47a1; color: #90caf9; }
+  </style>
+</head>
+<body>
+  <h1>Company Directory</h1>
+  <div class="instruction">
+    <p>This version prints the JSON data to both the Developer Console AND dynamically builds HTML elements on the page.</p>
+    <p>Click any card to select it. Each click is also logged to the console.</p>
+  </div>
+
+  <h2 class="section-title">Customers</h2>
+  <div id="customer-container"></div>
+  <p id="customer-summary" class="summary"></p>
+
+  <h2 class="section-title">Products</h2>
+  <div id="product-container"></div>
+  <p id="product-summary" class="summary"></p>
+
+  <h2 class="section-title">Offices</h2>
+  <div id="office-container"></div>
+  <p id="office-summary" class="summary"></p>
+
+  <script src="script.js"></script>
+</body>
+</html>
