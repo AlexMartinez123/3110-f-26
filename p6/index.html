@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 6 - Company Directory CRUD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page: #eef1f4;
+      --sheet: #ffffff;
+      --ink: #1c2733;
+      --muted: #5d6b78;
+      --line: #d5dbe1;
+      --tab-idle: #dfe4e9;
+      --accent: #1f6f5c;
+      --accent-dark: #17564a;
+      --green: #2e7d4f;
+      --amber: #9a6200;
+      --red: #b3403a;
+      --red-dark: #8f2f2a;
+      --slate: #4a6072;
+      --blue: #2c5f8a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--page);
+      color: var(--ink);
+      margin: 0;
+      padding: 40px 24px;
+      line-height: 1.45;
+    }
+    body.modal-open { overflow: hidden; }
+
+    .page { max-width: 1080px; margin: 0 auto; }
+
+    /* Header with the console-report button from project 1 */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .page-header h1 {
+      font-size: 2rem;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .page-header p {
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      max-width: 60ch;
+    }
+    .btn-report {
+      font: inherit;
+      font-weight: 600;
+      color: var(--ink);
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 16px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-report:hover { background-color: var(--tab-idle); }
+
+    /* Folder tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-top: 28px;
+      overflow-x: auto;
+    }
+    .tab {
+      font: inherit;
+      font-weight: 600;
+      color: var(--muted);
+      background-color: var(--tab-idle);
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 18px;
+      cursor: pointer;
+      position: relative;
+      top: 1px;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active { background-color: var(--sheet); color: var(--ink); }
+    .count {
+      display: inline-block;
+      min-width: 1.6em;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background-color: var(--page);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .tab.active .count { background-color: var(--accent); color: #fff; }
+
+    /* The sheet under the tabs is now one full-width column: the add form
+       moved into the shared modal, so the sidebar is gone. */
+    .tab-panel {
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 0 8px 8px 8px;
+      padding: 24px 28px 28px 28px;
+    }
+    .tab-panel[hidden] { display: none; }
+
+    .panel-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-bottom: 14px;
+      margin-bottom: 4px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .btn-primary {
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background-color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 9px 16px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background-color: var(--accent-dark); }
+    .search {
+      font: inherit;
+      color: var(--ink);
+      flex: 1 1 200px;
+      min-width: 160px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background-color: #fbfcfd;
+    }
+    .summary {
+      margin: 0;
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.92rem;
+      text-align: right;
+    }
+
+    .form-message {
+      margin: 10px 0 0 0;
+      font-size: 0.9rem;
+      min-height: 1.3em;
+    }
+    .form-message.error { color: var(--red); }
+    .form-message.success { color: var(--green); }
+
+    .undo-btn {
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 1px 8px;
+      margin-left: 6px;
+      cursor: pointer;
+    }
+    .undo-btn:hover { background-color: #e7f1ee; }
+
+    /* CARD GRID */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--slate);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 1px 2px rgba(28, 39, 51, 0.06);
+    }
+    .card h3 { margin: 0; font-size: 1rem; }
+    .card-id-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      flex-wrap: wrap;
+    }
+    .record-id { margin: 0; font-size: 0.85rem; color: var(--muted); }
+    .index-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      background-color: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+    .card-details { margin: 10px 0 14px 0; flex-grow: 1; }
+    .card-details p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+    .card-actions { display: flex; gap: 6px; }
+    .status {
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 2px 10px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      color: var(--slate);
+    }
+    .edit-btn, .delete-btn {
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 12px;
+      cursor: pointer;
+    }
+    .edit-btn { color: var(--blue); }
+    .edit-btn:hover { color: #fff; background-color: var(--blue); border-color: var(--blue); }
+    .delete-btn { color: var(--red); }
+    .delete-btn:hover { color: #fff; background-color: var(--red); border-color: var(--red); }
+    .delete-btn:active { background-color: var(--red-dark); }
+
+    /* Status colors: the stripe and the label share a color */
+    .status-active, .status-in-stock { border-left-color: var(--green); }
+    .status-active .status, .status-in-stock .status { color: var(--green); }
+    .status-pending, .status-low-stock { border-left-color: var(--amber); }
+    .status-pending .status, .status-low-stock .status { color: var(--amber); }
+    .status-inactive, .status-out-of-stock { border-left-color: var(--red); }
+    .status-inactive .status, .status-out-of-stock .status { color: var(--red); }
+
+    .empty {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    .just-added { animation: added 2s ease-out; }
+    @keyframes added {
+      from { background-color: #d9efe7; }
+      to { background-color: var(--sheet); }
+    }
+    .just-updated { animation: updated 2s ease-out; }
+    @keyframes updated {
+      from { background-color: #dce9f4; }
+      to { background-color: var(--sheet); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .just-added { animation: none; background-color: #e8f4ef; }
+      .just-updated { animation: none; background-color: #e7eef6; }
+    }
+
+    /* ============ SHARED ADD / EDIT MODAL ============ */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background-color: rgba(28, 39, 51, 0.55);
+    }
+    .modal-backdrop[hidden] { display: none; }
+
+    .modal {
+      width: 100%;
+      max-width: 540px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 18px 40px rgba(28, 39, 51, 0.28);
+      padding: 24px;
+    }
+    .modal h2 { margin: 0; font-size: 1.25rem; }
+    .modal-subtitle {
+      margin: 4px 0 18px 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .modal-subtitle code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background-color: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    .modal-fields { display: flex; flex-direction: column; gap: 12px; }
+    .modal-fields[hidden] { display: none; }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .field input, .field select {
+      width: 100%;
+      font: inherit;
+      color: var(--ink);
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background-color: #fbfcfd;
+    }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    input:focus-visible, select:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .btn-save, .btn-cancel {
+      font: inherit;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .btn-save {
+      color: #fff;
+      background-color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .btn-save:hover { background-color: var(--accent-dark); }
+    .btn-cancel {
+      color: var(--ink);
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+    }
+    .btn-cancel:hover { background-color: var(--page); }
+
+    @media (max-width: 560px) {
+      body { padding: 24px 12px; }
+      .tab-panel { padding: 18px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .summary { margin-left: 0; text-align: left; width: 100%; }
+      .modal { padding: 18px; }
+      .modal-actions { flex-direction: column-reverse; }
+      .btn-save, .btn-cancel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-header">
+      <header>
+        <h1>Company Directory</h1>
+        <p>Full CRUD over three synthetic data sets. Create and Update share one popup, Read is the card list and the console report, and Delete splices by array index.</p>
+      </header>
+      <button class="btn-report" onclick="printConsoleReport()">Print console report</button>
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="customers" role="tab" aria-selected="true" onclick="showTab('customers')">
+        Customers <span class="count" id="customer-count">0</span>
+      </button>
+      <button class="tab" data-tab="products" role="tab" aria-selected="false" onclick="showTab('products')">
+        Products <span class="count" id="product-count">0</span>
+      </button>
+      <button class="tab" data-tab="offices" role="tab" aria-selected="false" onclick="showTab('offices')">
+        Offices <span class="count" id="office-count">0</span>
+      </button>
+    </nav>
+
+    <!-- CUSTOMERS -->
+    <section class="tab-panel" id="customers-panel">
+      <div class="panel-toolbar">
+        <button class="btn-primary" onclick="openModal('customer')">+ Add customer</button>
+        <input type="search" class="search" id="customer-search" placeholder="Search customers..." oninput="renderCustomers()" aria-label="Search customers">
+        <p class="summary" id="customer-summary"></p>
+      </div>
+      <p class="form-message" id="customer-message" aria-live="polite"></p>
+      <div class="card-grid" id="customer-container"></div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="tab-panel" id="products-panel" hidden>
+      <div class="panel-toolbar">
+        <button class="btn-primary" onclick="openModal('product')">+ Add product</button>
+        <input type="search" class="search" id="product-search" placeholder="Search products..." oninput="renderProducts()" aria-label="Search products">
+        <p class="summary" id="product-summary"></p>
+      </div>
+      <p class="form-message" id="product-message" aria-live="polite"></p>
+      <div class="card-grid" id="product-container"></div>
+    </section>
+
+    <!-- OFFICES -->
+    <section class="tab-panel" id="offices-panel" hidden>
+      <div class="panel-toolbar">
+        <button class="btn-primary" onclick="openModal('office')">+ Add office</button>
+        <input type="search" class="search" id="office-search" placeholder="Search offices..." oninput="renderOffices()" aria-label="Search offices">
+        <p class="summary" id="office-summary"></p>
+      </div>
+      <p class="form-message" id="office-message" aria-live="polite"></p>
+      <div class="card-grid" id="office-container"></div>
+    </section>
+  </div>
+
+  <!-- ============ ONE MODAL FOR BOTH CREATE AND UPDATE ============ -->
+  <!-- Opened with an index it edits that record; opened without one it adds a
+       new record. The title, subtitle and Save button relabel themselves. -->
+  <div class="modal-backdrop" id="recordModal" hidden onclick="handleBackdropClick(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title">Record</h2>
+      <p class="modal-subtitle" id="modal-subtitle"></p>
+
+      <!-- CUSTOMER FIELDS -->
+      <div class="modal-fields" id="customer-fields" hidden>
+        <div class="field-row">
+          <div class="field">
+            <label for="formCustomerId">Customer ID</label>
+            <input type="text" id="formCustomerId" placeholder="CUST-107">
+          </div>
+          <div class="field">
+            <label for="formCustomerStatus">Status</label>
+            <select id="formCustomerStatus">
+              <option value="Active">Active</option>
+              <option value="Pending">Pending</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="formCustomerFirstName">First name</label>
+            <input type="text" id="formCustomerFirstName" placeholder="Jane">
+          </div>
+          <div class="field">
+            <label for="formCustomerLastName">Last name</label>
+            <input type="text" id="formCustomerLastName" placeholder="Doe">
+          </div>
+        </div>
+        <div class="field">
+          <label for="formCustomerEmail">Email</label>
+          <input type="email" id="formCustomerEmail" placeholder="jane.doe@example.com">
+        </div>
+        <div class="field">
+          <label for="formCustomerPhone">Phone</label>
+          <input type="text" id="formCustomerPhone" placeholder="555-0207">
+        </div>
+        <div class="field">
+          <label for="formCustomerAddress">Street address</label>
+          <input type="text" id="formCustomerAddress" placeholder="12 Orchard St">
+        </div>
+        <div class="field">
+          <label for="formCustomerCity">City</label>
+          <input type="text" id="formCustomerCity" placeholder="Phoenix">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="formCustomerState">State</label>
+            <input type="text" id="formCustomerState" placeholder="AZ" maxlength="2">
+          </div>
+          <div class="field">
+            <label for="formCustomerZip">Zip code</label>
+            <input type="text" id="formCustomerZip" placeholder="85004">
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCT FIELDS -->
+      <div class="modal-fields" id="product-fields" hidden>
+        <div class="field-row">
+          <div class="field">
+            <label for="formProductId">Product ID</label>
+            <input type="text" id="formProductId" placeholder="PROD-007">
+          </div>
+          <div class="field">
+            <label for="formProductSku">SKU</label>
+            <input type="text" id="formProductSku" placeholder="AC-LP-700">
+          </div>
+        </div>
+        <div class="field">
+          <label for="formProductName">Product name</label>
+          <input type="text" id="formProductName" placeholder="Laptop Stand">
+        </div>
+        <div class="field">
+          <label for="formProductCategory">Category</label>
+          <input type="text" id="formProductCategory" placeholder="Accessories">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="formProductPrice">Price ($)</label>
+            <input type="number" id="formProductPrice" placeholder="34.99" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label for="formProductStock">Units in stock</label>
+            <input type="number" id="formProductStock" placeholder="60" min="0" step="1">
+          </div>
+        </div>
+        <div class="field">
+          <label for="formProductStatus">Status</label>
+          <select id="formProductStatus">
+            <option value="In Stock">In Stock</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- OFFICE FIELDS -->
+      <div class="modal-fields" id="office-fields" hidden>
+        <div class="field">
+          <label for="formOfficeId">Office ID</label>
+          <input type="text" id="formOfficeId" placeholder="OFF-05">
+        </div>
+        <div class="field">
+          <label for="formOfficeName">Office name</label>
+          <input type="text" id="formOfficeName" placeholder="Pacific Northwest Office">
+        </div>
+        <div class="field">
+          <label for="formOfficeAddress">Street address</label>
+          <input type="text" id="formOfficeAddress" placeholder="400 Pine St">
+        </div>
+        <div class="field">
+          <label for="formOfficeCity">City</label>
+          <input type="text" id="formOfficeCity" placeholder="Seattle">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="formOfficeState">State</label>
+            <input type="text" id="formOfficeState" placeholder="WA" maxlength="2">
+          </div>
+          <div class="field">
+            <label for="formOfficeZip">Zip code</label>
+            <input type="text" id="formOfficeZip" placeholder="98101">
+          </div>
+        </div>
+        <div class="field">
+          <label for="formOfficePhone">Phone</label>
+          <input type="text" id="formOfficePhone" placeholder="555-5000">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="formOfficeManager">Manager</label>
+            <input type="text" id="formOfficeManager" placeholder="Rosa Diaz">
+          </div>
+          <div class="field">
+            <label for="formOfficeEmployees">Employees</label>
+            <input type="number" id="formOfficeEmployees" placeholder="15" min="0" step="1">
+          </div>
+        </div>
+      </div>
+
+      <p class="form-message" id="modal-message" aria-live="polite"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn-save" id="modal-save-btn" onclick="saveRecord()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
