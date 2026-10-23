@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 5 - Company Directory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page: #eef1f4;
+      --sheet: #ffffff;
+      --ink: #1c2733;
+      --muted: #5d6b78;
+      --line: #d5dbe1;
+      --tab-idle: #dfe4e9;
+      --accent: #1f6f5c;
+      --accent-dark: #17564a;
+      --green: #2e7d4f;
+      --amber: #9a6200;
+      --red: #b3403a;
+      --red-dark: #8f2f2a;
+      --slate: #4a6072;
+      --blue: #2c5f8a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--page);
+      color: var(--ink);
+      margin: 0;
+      padding: 40px 24px;
+      line-height: 1.45;
+    }
+    /* Set while the modal is open so the page behind it can't scroll */
+    body.modal-open { overflow: hidden; }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    header p {
+      margin: 6px 0 0 0;
+      color: var(--muted);
+    }
+
+    /* Folder tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-top: 28px;
+      overflow-x: auto;
+    }
+    .tab {
+      font: inherit;
+      font-weight: 600;
+      color: var(--muted);
+      background-color: var(--tab-idle);
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 18px;
+      cursor: pointer;
+      position: relative;
+      top: 1px;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active {
+      background-color: var(--sheet);
+      color: var(--ink);
+    }
+    .count {
+      display: inline-block;
+      min-width: 1.6em;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background-color: var(--page);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .tab.active .count {
+      background-color: var(--accent);
+      color: #fff;
+    }
+
+    /* The sheet under the tabs: form on the left, cards on the right */
+    .tab-panel {
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 0 8px 8px 8px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 36px;
+    }
+    .tab-panel[hidden] { display: none; }
+
+    /* Forms (shared by the add panel and the edit modal) */
+    .entry-form {
+      align-self: start;
+      position: sticky;
+      top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .entry-form h2,
+    .list-header h2 {
+      font-size: 1.15rem;
+      margin: 0;
+    }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .field input,
+    .field select {
+      width: 100%;
+      font: inherit;
+      color: var(--ink);
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background-color: #fbfcfd;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .entry-form button[type="submit"] {
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background-color: var(--accent);
+      border: none;
+      border-radius: 6px;
+      padding: 11px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .entry-form button[type="submit"]:hover { background-color: var(--accent-dark); }
+
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .form-message {
+      margin: 0;
+      font-size: 0.9rem;
+      min-height: 1.3em;
+    }
+    .form-message.error { color: var(--red); }
+    .form-message.success { color: var(--green); }
+
+    .undo-btn {
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 1px 8px;
+      margin-left: 6px;
+      cursor: pointer;
+    }
+    .undo-btn:hover { background-color: #e7f1ee; }
+
+    /* List header */
+    .list-header {
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .list-header p {
+      margin: 2px 0 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* CARD GRID */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--slate);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 1px 2px rgba(28, 39, 51, 0.06);
+    }
+    .card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .card-id-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      flex-wrap: wrap;
+    }
+    .record-id {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    /* Shows which array slot each card came from */
+    .index-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      background-color: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+    .card-details {
+      margin: 10px 0 14px 0;
+      flex-grow: 1;
+    }
+    .card-details p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .status {
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 2px 10px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      color: var(--slate);
+    }
+    .edit-btn, .delete-btn {
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 12px;
+      cursor: pointer;
+    }
+    .edit-btn { color: var(--blue); }
+    .edit-btn:hover {
+      color: #fff;
+      background-color: var(--blue);
+      border-color: var(--blue);
+    }
+    .delete-btn { color: var(--red); }
+    .delete-btn:hover {
+      color: #fff;
+      background-color: var(--red);
+      border-color: var(--red);
+    }
+    .delete-btn:active { background-color: var(--red-dark); }
+
+    /* Status colors: the stripe and the label share a color */
+    .status-active, .status-in-stock { border-left-color: var(--green); }
+    .status-active .status, .status-in-stock .status { color: var(--green); }
+    .status-pending, .status-low-stock { border-left-color: var(--amber); }
+    .status-pending .status, .status-low-stock .status { color: var(--amber); }
+    .status-inactive, .status-out-of-stock { border-left-color: var(--red); }
+    .status-inactive .status, .status-out-of-stock .status { color: var(--red); }
+
+    .empty {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    /* Highlights: green for a new card, blue for one that was just edited */
+    .just-added { animation: added 2s ease-out; }
+    @keyframes added {
+      from { background-color: #d9efe7; }
+      to { background-color: var(--sheet); }
+    }
+    .just-updated { animation: updated 2s ease-out; }
+    @keyframes updated {
+      from { background-color: #dce9f4; }
+      to { background-color: var(--sheet); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .just-added { animation: none; background-color: #e8f4ef; }
+      .just-updated { animation: none; background-color: #e7eef6; }
+    }
+
+    /* ============ EDIT MODAL (PROJECT 5) ============ */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background-color: rgba(28, 39, 51, 0.55);
+    }
+    /* Without this the display:flex above would keep showing the modal */
+    .modal-backdrop[hidden] { display: none; }
+
+    .modal {
+      width: 100%;
+      max-width: 540px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 18px 40px rgba(28, 39, 51, 0.28);
+      padding: 24px;
+    }
+    .modal h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+    .modal-subtitle {
+      margin: 4px 0 18px 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .modal-subtitle code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background-color: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    .modal-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-fields[hidden] { display: none; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .btn-save, .btn-cancel {
+      font: inherit;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .btn-save {
+      color: #fff;
+      background-color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .btn-save:hover { background-color: var(--accent-dark); }
+    .btn-cancel {
+      color: var(--ink);
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+    }
+    .btn-cancel:hover { background-color: var(--page); }
+
+    /* Smaller screens */
+    @media (max-width: 800px) {
+      .tab-panel { grid-template-columns: 1fr; padding: 20px; }
+      .entry-form { position: static; }
+    }
+    @media (max-width: 560px) {
+      body { padding: 24px 12px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .modal { padding: 18px; }
+      .modal-actions { flex-direction: column-reverse; }
+      .btn-save, .btn-cancel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Company Directory</h1>
+      <p>Add a record with the form, press Edit on a card to change it in a popup, or Delete to splice it out of the array.</p>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="customers" role="tab" aria-selected="true" onclick="showTab('customers')">
+        Customers <span class="count" id="customer-count">0</span>
+      </button>
+      <button class="tab" data-tab="products" role="tab" aria-selected="false" onclick="showTab('products')">
+        Products <span class="count" id="product-count">0</span>
+      </button>
+      <button class="tab" data-tab="offices" role="tab" aria-selected="false" onclick="showTab('offices')">
+        Offices <span class="count" id="office-count">0</span>
+      </button>
+    </nav>
+
+    <!-- CUSTOMERS -->
+    <section class="tab-panel" id="customers-panel">
+      <form class="entry-form" onsubmit="addCustomer(event)">
+        <h2>Add a customer</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="customerId">Customer ID</label>
+            <input type="text" id="customerId" placeholder="CUST-107" required>
+          </div>
+          <div class="field">
+            <label for="customerStatus">Status</label>
+            <select id="customerStatus">
+              <option value="Active">Active</option>
+              <option value="Pending">Pending</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="customerFirstName">First name</label>
+            <input type="text" id="customerFirstName" placeholder="Jane" required>
+          </div>
+          <div class="field">
+            <label for="customerLastName">Last name</label>
+            <input type="text" id="customerLastName" placeholder="Doe" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="customerEmail">Email</label>
+          <input type="email" id="customerEmail" placeholder="jane.doe@example.com" required>
+        </div>
+        <div class="field">
+          <label for="customerPhone">Phone</label>
+          <input type="text" id="customerPhone" placeholder="555-0207">
+        </div>
+        <div class="field">
+          <label for="customerAddress">Street address</label>
+          <input type="text" id="customerAddress" placeholder="12 Orchard St">
+        </div>
+        <div class="field">
+          <label for="customerCity">City</label>
+          <input type="text" id="customerCity" placeholder="Phoenix">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="customerState">State</label>
+            <input type="text" id="customerState" placeholder="AZ" maxlength="2">
+          </div>
+          <div class="field">
+            <label for="customerZip">Zip code</label>
+            <input type="text" id="customerZip" placeholder="85004">
+          </div>
+        </div>
+        <button type="submit">Add customer</button>
+        <p class="form-message" id="customer-message" aria-live="polite"></p>
+      </form>
+
+      <div>
+        <div class="list-header">
+          <h2>Customers</h2>
+          <p id="customer-summary"></p>
+        </div>
+        <div class="card-grid" id="customer-container"></div>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="tab-panel" id="products-panel" hidden>
+      <form class="entry-form" onsubmit="addProduct(event)">
+        <h2>Add a product</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="productId">Product ID</label>
+            <input type="text" id="productId" placeholder="PROD-007" required>
+          </div>
+          <div class="field">
+            <label for="productSku">SKU</label>
+            <input type="text" id="productSku" placeholder="AC-LP-700">
+          </div>
+        </div>
+        <div class="field">
+          <label for="productName">Product name</label>
+          <input type="text" id="productName" placeholder="Laptop Stand" required>
+        </div>
+        <div class="field">
+          <label for="productCategory">Category</label>
+          <input type="text" id="productCategory" placeholder="Accessories" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="productPrice">Price ($)</label>
+            <input type="number" id="productPrice" placeholder="34.99" min="0" step="0.01" required>
+          </div>
+          <div class="field">
+            <label for="productStock">Units in stock</label>
+            <input type="number" id="productStock" placeholder="60" min="0" step="1" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="productStatus">Status</label>
+          <select id="productStatus">
+            <option value="In Stock">In Stock</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+        </div>
+        <button type="submit">Add product</button>
+        <p class="form-message" id="product-message" aria-live="polite"></p>
+      </form>
+
+      <div>
+        <div class="list-header">
+          <h2>Products</h2>
+          <p id="product-summary"></p>
+        </div>
+        <div class="card-grid" id="product-container"></div>
+      </div>
+    </section>
+
+    <!-- OFFICES -->
+    <section class="tab-panel" id="offices-panel" hidden>
+      <form class="entry-form" onsubmit="addOffice(event)">
+        <h2>Add an office</h2>
+        <div class="field">
+          <label for="officeId">Office ID</label>
+          <input type="text" id="officeId" placeholder="OFF-05" required>
+        </div>
+        <div class="field">
+          <label for="officeName">Office name</label>
+          <input type="text" id="officeName" placeholder="Pacific Northwest Office" required>
+        </div>
+        <div class="field">
+          <label for="officeAddress">Street address</label>
+          <input type="text" id="officeAddress" placeholder="400 Pine St">
+        </div>
+        <div class="field">
+          <label for="officeCity">City</label>
+          <input type="text" id="officeCity" placeholder="Seattle">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="officeState">State</label>
+            <input type="text" id="officeState" placeholder="WA" maxlength="2">
+          </div>
+          <div class="field">
+            <label for="officeZip">Zip code</label>
+            <input type="text" id="officeZip" placeholder="98101">
+          </div>
+        </div>
+        <div class="field">
+          <label for="officePhone">Phone</label>
+          <input type="text" id="officePhone" placeholder="555-5000">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="officeManager">Manager</label>
+            <input type="text" id="officeManager" placeholder="Rosa Diaz" required>
+          </div>
+          <div class="field">
+            <label for="officeEmployees">Employees</label>
+            <input type="number" id="officeEmployees" placeholder="15" min="0" step="1" required>
+          </div>
+        </div>
+        <button type="submit">Add office</button>
+        <p class="form-message" id="office-message" aria-live="polite"></p>
+      </form>
+
+      <div>
+        <div class="list-header">
+          <h2>Offices</h2>
+          <p id="office-summary"></p>
+        </div>
+        <div class="card-grid" id="office-container"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ EDIT MODAL (PROJECT 5) ============ -->
+  <!-- One popup shell serves all three record types. Only the matching field
+       group is shown, based on which Edit button was pressed. -->
+  <div class="modal-backdrop" id="editModal" hidden onclick="handleBackdropClick(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title">Edit record</h2>
+      <p class="modal-subtitle" id="modal-subtitle"></p>
+
+      <!-- CUSTOMER FIELDS -->
+      <div class="modal-fields" id="customer-fields" hidden>
+        <div class="field-row">
+          <div class="field">
+            <label for="editCustomerId">Customer ID</label>
+            <input type="text" id="editCustomerId">
+          </div>
+          <div class="field">
+            <label for="editCustomerStatus">Status</label>
+            <select id="editCustomerStatus">
+              <option value="Active">Active</option>
+              <option value="Pending">Pending</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editCustomerFirstName">First name</label>
+            <input type="text" id="editCustomerFirstName">
+          </div>
+          <div class="field">
+            <label for="editCustomerLastName">Last name</label>
+            <input type="text" id="editCustomerLastName">
+          </div>
+        </div>
+        <div class="field">
+          <label for="editCustomerEmail">Email</label>
+          <input type="email" id="editCustomerEmail">
+        </div>
+        <div class="field">
+          <label for="editCustomerPhone">Phone</label>
+          <input type="text" id="editCustomerPhone">
+        </div>
+        <div class="field">
+          <label for="editCustomerAddress">Street address</label>
+          <input type="text" id="editCustomerAddress">
+        </div>
+        <div class="field">
+          <label for="editCustomerCity">City</label>
+          <input type="text" id="editCustomerCity">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editCustomerState">State</label>
+            <input type="text" id="editCustomerState" maxlength="2">
+          </div>
+          <div class="field">
+            <label for="editCustomerZip">Zip code</label>
+            <input type="text" id="editCustomerZip">
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCT FIELDS -->
+      <div class="modal-fields" id="product-fields" hidden>
+        <div class="field-row">
+          <div class="field">
+            <label for="editProductId">Product ID</label>
+            <input type="text" id="editProductId">
+          </div>
+          <div class="field">
+            <label for="editProductSku">SKU</label>
+            <input type="text" id="editProductSku">
+          </div>
+        </div>
+        <div class="field">
+          <label for="editProductName">Product name</label>
+          <input type="text" id="editProductName">
+        </div>
+        <div class="field">
+          <label for="editProductCategory">Category</label>
+          <input type="text" id="editProductCategory">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editProductPrice">Price ($)</label>
+            <input type="number" id="editProductPrice" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label for="editProductStock">Units in stock</label>
+            <input type="number" id="editProductStock" min="0" step="1">
+          </div>
+        </div>
+        <div class="field">
+          <label for="editProductStatus">Status</label>
+          <select id="editProductStatus">
+            <option value="In Stock">In Stock</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- OFFICE FIELDS -->
+      <div class="modal-fields" id="office-fields" hidden>
+        <div class="field">
+          <label for="editOfficeId">Office ID</label>
+          <input type="text" id="editOfficeId">
+        </div>
+        <div class="field">
+          <label for="editOfficeName">Office name</label>
+          <input type="text" id="editOfficeName">
+        </div>
+        <div class="field">
+          <label for="editOfficeAddress">Street address</label>
+          <input type="text" id="editOfficeAddress">
+        </div>
+        <div class="field">
+          <label for="editOfficeCity">City</label>
+          <input type="text" id="editOfficeCity">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editOfficeState">State</label>
+            <input type="text" id="editOfficeState" maxlength="2">
+          </div>
+          <div class="field">
+            <label for="editOfficeZip">Zip code</label>
+            <input type="text" id="editOfficeZip">
+          </div>
+        </div>
+        <div class="field">
+          <label for="editOfficePhone">Phone</label>
+          <input type="text" id="editOfficePhone">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editOfficeManager">Manager</label>
+            <input type="text" id="editOfficeManager">
+          </div>
+          <div class="field">
+            <label for="editOfficeEmployees">Employees</label>
+            <input type="number" id="editOfficeEmployees" min="0" step="1">
+          </div>
+        </div>
+      </div>
+
+      <p class="form-message" id="modal-message" aria-live="polite"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn-save" onclick="saveEdit()">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
