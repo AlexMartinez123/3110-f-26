@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record Disclosure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page: #eef1f4;
+      --sheet: #ffffff;
+      --ink: #1c2733;
+      --muted: #5d6b78;
+      --line: #d5dbe1;
+      --accent: #1f6f5c;
+      --green: #2e7d4f;
+      --amber: #9a6200;
+      --red: #b3403a;
+      --slate: #4a6072;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--page);
+      color: var(--ink);
+      margin: 0;
+      padding: 40px 24px;
+      line-height: 1.45;
+    }
+    .page { max-width: 640px; margin: 0 auto; }
+
+    .back-btn {
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--ink);
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 14px;
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+    .back-btn:hover { background-color: var(--tab-idle, #dfe4e9); }
+
+    .profile-card {
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(28, 39, 51, 0.08);
+      padding: 36px 32px;
+      text-align: center;
+    }
+    .profile-media {
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 0 auto 18px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--slate);
+      background-color: var(--page);
+      border: 3px solid var(--accent);
+    }
+    .profile-card h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: -0.01em;
+    }
+    .profile-meta {
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    .status {
+      display: inline-block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 2px 12px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      color: var(--slate);
+      margin-top: 10px;
+    }
+    .status-active, .status-in-stock { color: var(--green); }
+    .status-pending, .status-low-stock { color: var(--amber); }
+    .status-inactive, .status-out-of-stock { color: var(--red); }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      text-align: left;
+      margin-top: 28px;
+      padding: 22px;
+      background-color: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .data-grid span {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .data-grid strong {
+      font-size: 1.02rem;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .missing {
+      color: var(--muted);
+      padding: 20px 0;
+    }
+
+    /* The query string that built this page, shown so the mechanism is visible */
+    .params {
+      margin-top: 22px;
+      background-color: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+    }
+    .params summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .params table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+    }
+    .params td {
+      padding: 4px 8px 4px 0;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+    .params td:first-child { color: var(--muted); white-space: nowrap; }
+
+    @media (max-width: 520px) {
+      body { padding: 24px 12px; }
+      .data-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a href="index.html" class="back-btn">&larr; Back to directory</a>
+
+    <div class="profile-card" id="profileOutput">
+      <p class="missing">Loading…</p>
+    </div>
+
+    <details class="params" id="paramsBlock" hidden>
+      <summary>Show the URL parameters that built this page</summary>
+      <table id="paramsTable"></table>
+    </details>
+  </div>
+
+  <script>
+    // ============ 1. CAPTURE THE URL DATA ============
+    // window.location.search is the part of the address after the "?", e.g.
+    //   ?customerId=CUST-101&firstName=Marcus&email=marcus.lee%40example.com
+    // URLSearchParams unpacks that back into readable values, undoing the
+    // percent-encoding that was applied when the link was built.
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+
+    console.log('Query string received:', queryString);
+    console.log('Parsed parameters:', Object.fromEntries(urlParams));
+
+    // Anything rendered here came out of the address bar, which anyone can
+    // edit, so every value is escaped before it reaches innerHTML.
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function get(key, fallback) {
+      const value = urlParams.get(key);
+      return value === null || value === '' ? (fallback || '') : value;
+    }
+
+    function initials(text) {
+      const words = String(text).trim().split(/\s+/);
+      let letters = '';
+      for (const word of words.slice(0, 2)) {
+        if (word) {
+          letters += word[0];
+        }
+      }
+      // Keep letters and digits only: the result is embedded in an onerror
+  // attribute, and a stray quote there would break the handler.
+  return letters.toUpperCase().replace(/[^A-Z0-9]/g, '') || '?';
+    }
+
+    // A photo when one came through, otherwise an initials circle
+    function media(imageUrl, label) {
+      if (imageUrl) {
+        return `<img class="profile-media" src="${escapeHtml(imageUrl)}" alt=""
+                  onerror="this.replaceWith(monogram('${escapeHtml(initials(label))}'))">`;
+      }
+      return `<div class="profile-media">${escapeHtml(initials(label))}</div>`;
+    }
+
+    function monogram(letters) {
+      const div = document.createElement('div');
+      div.className = 'profile-media';
+      div.textContent = letters;
+      return div;
+    }
+
+    function statusPill(status) {
+      if (!status) {
+        return '';
+      }
+      const cssClass = 'status-' + status.toLowerCase().replaceAll(' ', '-');
+      return `<div><span class="status ${cssClass}">${escapeHtml(status)}</span></div>`;
+    }
+
+    function cell(label, value) {
+      return `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || 'N/A')}</strong></div>`;
+    }
+
+    // ============ 2. BUILD THE PAGE FOR WHICHEVER TYPE ARRIVED ============
+    const output = document.getElementById('profileOutput');
+    const type = get('type');
+
+    if (queryString === '' || type === '') {
+      output.innerHTML =
+        '<p class="missing">No record was passed in the URL.<br>' +
+        'Open this page by pressing <strong>View details</strong> on a card in the directory.</p>';
+
+    } else if (type === 'customer') {
+      const firstName = get('firstName');
+      const lastName = get('lastName');
+      const fullName = `${firstName} ${lastName}`.trim();
+
+      document.title = `${fullName || 'Customer'} - Disclosure`;
+      output.innerHTML = `
+        ${media(get('imageUrl'), fullName)}
+        <h1>${escapeHtml(fullName || 'Unnamed customer')}</h1>
+        <p class="profile-meta">${escapeHtml(get('customerId', 'Unknown ID'))}</p>
+        ${statusPill(get('status'))}
+        <div class="data-grid">
+          ${cell('Email address', get('email'))}
+          ${cell('Phone number', get('phone'))}
+          ${cell('Street address', get('address'))}
+          ${cell('Location', `${get('city')}, ${get('state')} ${get('zipCode')}`.trim())}
+        </div>
+      `;
+
+    } else if (type === 'product') {
+      const name = get('name');
+
+      // Numbers survive the trip as text, so convert before doing any maths
+      const price = parseFloat(get('price'));
+      const stock = parseInt(get('stockQuantity'));
+      const priceText = Number.isNaN(price) ? 'N/A' : `$${price.toFixed(2)}`;
+      const stockText = Number.isNaN(stock) ? 'N/A' : `${stock} units`;
+      const valueText = Number.isNaN(price) || Number.isNaN(stock)
+        ? 'N/A'
+        : `$${(price * stock).toFixed(2)}`;
+
+      document.title = `${name || 'Product'} - Disclosure`;
+      output.innerHTML = `
+        ${media('', name)}
+        <h1>${escapeHtml(name || 'Unnamed product')}</h1>
+        <p class="profile-meta">${escapeHtml(get('productId', 'Unknown ID'))}</p>
+        ${statusPill(get('status'))}
+        <div class="data-grid">
+          ${cell('Category', get('category'))}
+          ${cell('SKU', get('sku'))}
+          ${cell('Unit price', priceText)}
+          ${cell('In stock', stockText)}
+          ${cell('Stock value', valueText)}
+        </div>
+      `;
+
+    } else if (type === 'office') {
+      const name = get('officeName');
+      const employees = parseInt(get('employeeCount'));
+
+      document.title = `${name || 'Office'} - Disclosure`;
+      output.innerHTML = `
+        ${media('', name)}
+        <h1>${escapeHtml(name || 'Unnamed office')}</h1>
+        <p class="profile-meta">${escapeHtml(get('officeId', 'Unknown ID'))}</p>
+        <div class="data-grid">
+          ${cell('Street address', get('address'))}
+          ${cell('Location', `${get('city')}, ${get('state')} ${get('zipCode')}`.trim())}
+          ${cell('Phone number', get('phone'))}
+          ${cell('Manager', get('manager'))}
+          ${cell('Employees', Number.isNaN(employees) ? 'N/A' : String(employees))}
+        </div>
+      `;
+
+    } else {
+      output.innerHTML =
+        `<p class="missing">Unrecognised record type "${escapeHtml(type)}".</p>`;
+    }
+
+    // ============ 3. SHOW THE PARAMETERS THEMSELVES ============
+    // Listing the key/value pairs makes the mechanism visible: this is exactly
+    // what URLSearchParams packed on the directory page and unpacked here.
+    const rows = [];
+    for (const [key, value] of urlParams) {
+      rows.push(`<tr><td>${escapeHtml(key)}</td><td>${escapeHtml(value)}</td></tr>`);
+    }
+    if (rows.length > 0) {
+      document.getElementById('paramsTable').innerHTML = rows.join('');
+      document.getElementById('paramsBlock').hidden = false;
+    }
+  </script>
+</body>
+</html>
