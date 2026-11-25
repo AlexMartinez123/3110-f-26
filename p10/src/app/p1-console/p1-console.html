@@ -1,0 +1,43 @@
+<section class="panel" id="p1">
+  <header class="panel-head">
+    <h2>Project 1 &mdash; Iterating data with a service</h2>
+    <p>
+      <code>P1Console</code> injected three services and read
+      <strong>{{ customers().length }}</strong> customers,
+      <strong>{{ products().length }}</strong> products and
+      <strong>{{ offices().length }}</strong> offices, every one strictly typed.
+    </p>
+  </header>
+
+  <div class="instruction">
+    <p>
+      The formatted reports went to the <strong>developer console</strong> when this component
+      initialized. <code>ngOnInit()</code> does the job that plain top-to-bottom script execution
+      did in <code>p1/script.js</code>.
+    </p>
+    <p>
+      <small>Open it with <code>Cmd + Option + J</code> on Mac, or <code>Ctrl + Shift + J</code> on Windows.</small>
+    </p>
+
+    <div class="stat-row">
+      <div class="stat">
+        <span>Customers</span>
+        <strong>{{ customers().length }}</strong>
+      </div>
+      <div class="stat">
+        <span>Inventory value</span>
+        <strong>{{ totalInventoryValue() | currency }}</strong>
+      </div>
+      <div class="stat">
+        <span>Employees</span>
+        <strong>{{ totalEmployees() }}</strong>
+      </div>
+    </div>
+
+    <button class="btn" (click)="printAllReports()">Re-print reports to console</button>
+    <p class="hint">
+      Add or delete records further down the page, then press this again: the reports read the
+      same live Signals, so they always reflect the current data.
+    </p>
+  </div>
+</section>

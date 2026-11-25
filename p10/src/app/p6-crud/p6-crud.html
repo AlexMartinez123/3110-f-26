@@ -1,0 +1,383 @@
+<section class="panel" id="p6">
+  <header class="panel-head">
+    <h2>Project 6 &mdash; Unified CRUD</h2>
+    <p>
+      One popup does both jobs: opened without an index it creates, opened with one it updates.
+      Search filters the rows through a <code>computed()</code> Signal that keeps every match
+      paired with its real array index, so Edit and Delete still hit the right record.
+    </p>
+    <button class="btn" (click)="printConsoleReport()">Print console report</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" [class.active]="activeTab() === 'customers'"
+            (click)="showTab('customers')" role="tab"
+            [attr.aria-selected]="activeTab() === 'customers'">
+      Customers <span class="count">{{ customers().length }}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'products'"
+            (click)="showTab('products')" role="tab"
+            [attr.aria-selected]="activeTab() === 'products'">
+      Products <span class="count">{{ products().length }}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'offices'"
+            (click)="showTab('offices')" role="tab"
+            [attr.aria-selected]="activeTab() === 'offices'">
+      Offices <span class="count">{{ offices().length }}</span>
+    </button>
+  </nav>
+
+  <div class="tab-panel">
+
+    @if (lastDelete(); as pending) {
+      <p class="undo-bar">
+        Deleted <strong>{{ pending.label }}</strong> from index {{ pending.index }}.
+        <button class="undo-btn" (click)="undoDelete()">Undo</button>
+      </p>
+    }
+    @if (pageMessage(); as note) {
+      <p class="form-message" [class.error]="note.isError">{{ note.text }}</p>
+    }
+
+    <!-- ============ CUSTOMERS ============ -->
+    @if (activeTab() === 'customers') {
+      <div class="toolbar">
+        <button class="btn-primary" (click)="openCreate('customers')">+ Add customer</button>
+        <input class="search" type="search" placeholder="Search customers..."
+               aria-label="Search customers"
+               [ngModel]="customerSearch()" (ngModelChange)="customerSearch.set($event)">
+        <p class="summary">
+          @if (customerSearch().trim()) {
+            Showing {{ filteredCustomers().length }} of {{ customers().length }} customers
+          } @else {
+            {{ customers().length }} customers on file
+          }
+        </p>
+      </div>
+
+      <div class="card-grid">
+        @for (entry of filteredCustomers(); track entry.record.customerId) {
+          <div class="card status-{{ entry.record.status.toLowerCase() }}">
+            <h4>{{ entry.record.firstName }} {{ entry.record.lastName }}</h4>
+            <div class="card-id-row">
+              <p class="record-id">{{ entry.record.customerId }}</p>
+              <span class="index-chip">index {{ entry.index }}</span>
+            </div>
+            <div class="card-details">
+              <p>{{ entry.record.email }}</p>
+              <p>{{ entry.record.phone }}</p>
+              <p>{{ entry.record.address }}, {{ entry.record.city }}, {{ entry.record.state }} {{ entry.record.zipCode }}</p>
+            </div>
+            <div class="card-footer">
+              <span class="status">{{ entry.record.status }}</span>
+              <div class="card-actions">
+                <button class="edit-btn" (click)="openEdit('customers', entry.index)">Edit</button>
+                <button class="delete-btn" (click)="deleteCustomer(entry.index)">Delete</button>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">
+            @if (customers().length === 0) {
+              No customers yet. Use Add customer to create one.
+            } @else {
+              No customers match that search.
+            }
+          </p>
+        }
+      </div>
+    }
+
+    <!-- ============ PRODUCTS ============ -->
+    @if (activeTab() === 'products') {
+      <div class="toolbar">
+        <button class="btn-primary" (click)="openCreate('products')">+ Add product</button>
+        <input class="search" type="search" placeholder="Search products..."
+               aria-label="Search products"
+               [ngModel]="productSearch()" (ngModelChange)="productSearch.set($event)">
+        <p class="summary">
+          @if (productSearch().trim()) {
+            Showing {{ filteredProducts().length }} of {{ products().length }} products
+          } @else {
+            {{ products().length }} products &middot; {{ totalInventoryValue() | currency }} total inventory value
+          }
+        </p>
+      </div>
+
+      <div class="card-grid">
+        @for (entry of filteredProducts(); track entry.record.productId) {
+          <div class="card {{ statusClass(entry.record.status) }}">
+            <h4>{{ entry.record.name }}</h4>
+            <div class="card-id-row">
+              <p class="record-id">{{ entry.record.productId }}</p>
+              <span class="index-chip">index {{ entry.index }}</span>
+            </div>
+            <div class="card-details">
+              <p>{{ entry.record.category }} | SKU {{ entry.record.sku }}</p>
+              <p>{{ entry.record.price | currency }} each</p>
+              <p>{{ entry.record.stockQuantity }} units in stock</p>
+            </div>
+            <div class="card-footer">
+              <span class="status">{{ entry.record.status }}</span>
+              <div class="card-actions">
+                <button class="edit-btn" (click)="openEdit('products', entry.index)">Edit</button>
+                <button class="delete-btn" (click)="deleteProduct(entry.index)">Delete</button>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">
+            @if (products().length === 0) {
+              No products yet. Use Add product to create one.
+            } @else {
+              No products match that search.
+            }
+          </p>
+        }
+      </div>
+    }
+
+    <!-- ============ OFFICES ============ -->
+    @if (activeTab() === 'offices') {
+      <div class="toolbar">
+        <button class="btn-primary" (click)="openCreate('offices')">+ Add office</button>
+        <input class="search" type="search" placeholder="Search offices..."
+               aria-label="Search offices"
+               [ngModel]="officeSearch()" (ngModelChange)="officeSearch.set($event)">
+        <p class="summary">
+          @if (officeSearch().trim()) {
+            Showing {{ filteredOffices().length }} of {{ offices().length }} offices
+          } @else {
+            {{ offices().length }} offices &middot; {{ totalEmployees() }} employees total
+          }
+        </p>
+      </div>
+
+      <div class="card-grid">
+        @for (entry of filteredOffices(); track entry.record.officeId) {
+          <div class="card">
+            <h4>{{ entry.record.officeName }}</h4>
+            <div class="card-id-row">
+              <p class="record-id">{{ entry.record.officeId }}</p>
+              <span class="index-chip">index {{ entry.index }}</span>
+            </div>
+            <div class="card-details">
+              <p>{{ entry.record.address }}, {{ entry.record.city }}, {{ entry.record.state }} {{ entry.record.zipCode }}</p>
+              <p>{{ entry.record.phone }}</p>
+              <p>Managed by {{ entry.record.manager }}</p>
+            </div>
+            <div class="card-footer">
+              <span class="status">{{ entry.record.employeeCount }} employees</span>
+              <div class="card-actions">
+                <button class="edit-btn" (click)="openEdit('offices', entry.index)">Edit</button>
+                <button class="delete-btn" (click)="deleteOffice(entry.index)">Delete</button>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">
+            @if (offices().length === 0) {
+              No offices yet. Use Add office to create one.
+            } @else {
+              No offices match that search.
+            }
+          </p>
+        }
+      </div>
+    }
+
+  </div>
+</section>
+
+<!-- ============ ONE POPUP FOR BOTH CREATE AND UPDATE ============ -->
+@if (isOpen()) {
+  <div class="modal-backdrop" (click)="onBackdropClick($event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="p6-modal-title">
+      <h3 id="p6-modal-title">{{ modalTitle() }}</h3>
+      <p class="modal-subtitle">
+        @if (isCreating()) {
+          The new record will be pushed onto the end of the array, landing at
+          <code>index {{ nextIndex() }}</code>.
+        } @else {
+          Editing the record at <code>index {{ modalIndex() }}</code> of the array.
+        }
+      </p>
+
+      @if (modalType() === 'customers') {
+        <div class="modal-fields">
+          <div class="field-row">
+            <div class="field">
+              <label for="p6CustomerId">Customer ID</label>
+              <input id="p6CustomerId" type="text" name="customerId" placeholder="CUST-107"
+                     [(ngModel)]="customerDraft.customerId">
+            </div>
+            <div class="field">
+              <label for="p6CustomerStatus">Status</label>
+              <select id="p6CustomerStatus" name="status" [(ngModel)]="customerDraft.status">
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p6CustomerFirst">First name</label>
+              <input id="p6CustomerFirst" type="text" name="firstName" placeholder="Jane"
+                     [(ngModel)]="customerDraft.firstName">
+            </div>
+            <div class="field">
+              <label for="p6CustomerLast">Last name</label>
+              <input id="p6CustomerLast" type="text" name="lastName" placeholder="Doe"
+                     [(ngModel)]="customerDraft.lastName">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p6CustomerEmail">Email</label>
+            <input id="p6CustomerEmail" type="email" name="email" placeholder="jane.doe@example.com"
+                   [(ngModel)]="customerDraft.email">
+          </div>
+          <div class="field">
+            <label for="p6CustomerPhone">Phone</label>
+            <input id="p6CustomerPhone" type="text" name="phone" placeholder="555-0207"
+                   [(ngModel)]="customerDraft.phone">
+          </div>
+          <div class="field">
+            <label for="p6CustomerAddress">Street address</label>
+            <input id="p6CustomerAddress" type="text" name="address" placeholder="12 Orchard St"
+                   [(ngModel)]="customerDraft.address">
+          </div>
+          <div class="field">
+            <label for="p6CustomerCity">City</label>
+            <input id="p6CustomerCity" type="text" name="city" placeholder="Phoenix"
+                   [(ngModel)]="customerDraft.city">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p6CustomerState">State</label>
+              <input id="p6CustomerState" type="text" name="state" maxlength="2" placeholder="AZ"
+                     [(ngModel)]="customerDraft.state">
+            </div>
+            <div class="field">
+              <label for="p6CustomerZip">Zip code</label>
+              <input id="p6CustomerZip" type="text" name="zipCode" placeholder="85004"
+                     [(ngModel)]="customerDraft.zipCode">
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (modalType() === 'products') {
+        <div class="modal-fields">
+          <div class="field-row">
+            <div class="field">
+              <label for="p6ProductId">Product ID</label>
+              <input id="p6ProductId" type="text" name="productId" placeholder="PROD-007"
+                     [(ngModel)]="productDraft.productId">
+            </div>
+            <div class="field">
+              <label for="p6ProductSku">SKU</label>
+              <input id="p6ProductSku" type="text" name="sku" placeholder="AC-LP-700"
+                     [(ngModel)]="productDraft.sku">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p6ProductName">Product name</label>
+            <input id="p6ProductName" type="text" name="name" placeholder="Laptop Stand"
+                   [(ngModel)]="productDraft.name">
+          </div>
+          <div class="field">
+            <label for="p6ProductCategory">Category</label>
+            <input id="p6ProductCategory" type="text" name="category" placeholder="Accessories"
+                   [(ngModel)]="productDraft.category">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p6ProductPrice">Price ($)</label>
+              <input id="p6ProductPrice" type="number" name="price" min="0" step="0.01" placeholder="34.99"
+                     [(ngModel)]="productDraft.price">
+            </div>
+            <div class="field">
+              <label for="p6ProductStock">Units in stock</label>
+              <input id="p6ProductStock" type="number" name="stockQuantity" min="0" step="1" placeholder="60"
+                     [(ngModel)]="productDraft.stockQuantity">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p6ProductStatus">Status</label>
+            <select id="p6ProductStatus" name="productStatus" [(ngModel)]="productDraft.status">
+              <option value="In Stock">In Stock</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+      }
+
+      @if (modalType() === 'offices') {
+        <div class="modal-fields">
+          <div class="field">
+            <label for="p6OfficeId">Office ID</label>
+            <input id="p6OfficeId" type="text" name="officeId" placeholder="OFF-05"
+                   [(ngModel)]="officeDraft.officeId">
+          </div>
+          <div class="field">
+            <label for="p6OfficeName">Office name</label>
+            <input id="p6OfficeName" type="text" name="officeName" placeholder="Pacific Northwest Office"
+                   [(ngModel)]="officeDraft.officeName">
+          </div>
+          <div class="field">
+            <label for="p6OfficeAddress">Street address</label>
+            <input id="p6OfficeAddress" type="text" name="officeAddress" placeholder="400 Pine St"
+                   [(ngModel)]="officeDraft.address">
+          </div>
+          <div class="field">
+            <label for="p6OfficeCity">City</label>
+            <input id="p6OfficeCity" type="text" name="officeCity" placeholder="Seattle"
+                   [(ngModel)]="officeDraft.city">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p6OfficeState">State</label>
+              <input id="p6OfficeState" type="text" name="officeState" maxlength="2" placeholder="WA"
+                     [(ngModel)]="officeDraft.state">
+            </div>
+            <div class="field">
+              <label for="p6OfficeZip">Zip code</label>
+              <input id="p6OfficeZip" type="text" name="officeZip" placeholder="98101"
+                     [(ngModel)]="officeDraft.zipCode">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p6OfficePhone">Phone</label>
+            <input id="p6OfficePhone" type="text" name="officePhone" placeholder="555-5000"
+                   [(ngModel)]="officeDraft.phone">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p6OfficeManager">Manager</label>
+              <input id="p6OfficeManager" type="text" name="manager" placeholder="Rosa Diaz"
+                     [(ngModel)]="officeDraft.manager">
+            </div>
+            <div class="field">
+              <label for="p6OfficeEmployees">Employees</label>
+              <input id="p6OfficeEmployees" type="number" name="employeeCount" min="0" step="1" placeholder="15"
+                     [(ngModel)]="officeDraft.employeeCount">
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (modalMessage(); as note) {
+        <p class="form-message error">{{ note }}</p>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="saveRecord()">
+          {{ isCreating() ? 'Add record' : 'Save changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

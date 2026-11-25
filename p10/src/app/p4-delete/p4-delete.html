@@ -1,0 +1,310 @@
+<section class="panel" id="p4">
+  <header class="panel-head">
+    <h2>Project 4 &mdash; Cards that delete by array index</h2>
+    <p>
+      Angular's <code>&#64;for</code> block hands the template a <code>$index</code> for free,
+      which is exactly what project 4 kept a manual counter for. The service deletes that slot
+      and every card renumbers itself, because the list is a Signal.
+    </p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" [class.active]="activeTab() === 'customers'"
+            (click)="showTab('customers')" role="tab"
+            [attr.aria-selected]="activeTab() === 'customers'">
+      Customers <span class="count">{{ customers().length }}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'products'"
+            (click)="showTab('products')" role="tab"
+            [attr.aria-selected]="activeTab() === 'products'">
+      Products <span class="count">{{ products().length }}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'offices'"
+            (click)="showTab('offices')" role="tab"
+            [attr.aria-selected]="activeTab() === 'offices'">
+      Offices <span class="count">{{ offices().length }}</span>
+    </button>
+  </nav>
+
+  <div class="tab-panel">
+
+    <!-- The undo bar appears only while a deletion can still be taken back -->
+    @if (lastDelete(); as pending) {
+      <p class="undo-bar">
+        Deleted <strong>{{ pending.label }}</strong> from index {{ pending.index }}.
+        <button class="undo-btn" (click)="undoDelete()">Undo</button>
+      </p>
+    }
+    @if (message(); as note) {
+      <p class="form-message" [class.error]="note.isError">{{ note.text }}</p>
+    }
+
+    <!-- ============ CUSTOMERS ============ -->
+    @if (activeTab() === 'customers') {
+      <div class="split">
+        <form class="entry-form" (ngSubmit)="addCustomer()">
+          <h3>Add a customer</h3>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4CustomerId">Customer ID</label>
+              <input id="p4CustomerId" type="text" name="customerId"
+                     [(ngModel)]="newCustomer.customerId" placeholder="CUST-107">
+            </div>
+            <div class="field">
+              <label for="p4CustomerStatus">Status</label>
+              <select id="p4CustomerStatus" name="status" [(ngModel)]="newCustomer.status">
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4CustomerFirst">First name</label>
+              <input id="p4CustomerFirst" type="text" name="firstName"
+                     [(ngModel)]="newCustomer.firstName" placeholder="Jane">
+            </div>
+            <div class="field">
+              <label for="p4CustomerLast">Last name</label>
+              <input id="p4CustomerLast" type="text" name="lastName"
+                     [(ngModel)]="newCustomer.lastName" placeholder="Doe">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p4CustomerEmail">Email</label>
+            <input id="p4CustomerEmail" type="email" name="email"
+                   [(ngModel)]="newCustomer.email" placeholder="jane.doe@example.com">
+          </div>
+          <div class="field">
+            <label for="p4CustomerPhone">Phone</label>
+            <input id="p4CustomerPhone" type="text" name="phone"
+                   [(ngModel)]="newCustomer.phone" placeholder="555-0207">
+          </div>
+          <div class="field">
+            <label for="p4CustomerAddress">Street address</label>
+            <input id="p4CustomerAddress" type="text" name="address"
+                   [(ngModel)]="newCustomer.address" placeholder="12 Orchard St">
+          </div>
+          <div class="field">
+            <label for="p4CustomerCity">City</label>
+            <input id="p4CustomerCity" type="text" name="city"
+                   [(ngModel)]="newCustomer.city" placeholder="Phoenix">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4CustomerState">State</label>
+              <input id="p4CustomerState" type="text" name="state" maxlength="2"
+                     [(ngModel)]="newCustomer.state" placeholder="AZ">
+            </div>
+            <div class="field">
+              <label for="p4CustomerZip">Zip code</label>
+              <input id="p4CustomerZip" type="text" name="zipCode"
+                     [(ngModel)]="newCustomer.zipCode" placeholder="85004">
+            </div>
+          </div>
+          <button class="btn-primary" type="submit">Add customer</button>
+        </form>
+
+        <div>
+          <div class="list-header">
+            <h3>Customers</h3>
+            <p>{{ customers().length }} customers on file</p>
+          </div>
+          <div class="card-grid">
+            @for (customer of customers(); track customer.customerId) {
+              <div class="card status-{{ customer.status.toLowerCase() }}">
+                <h4>{{ customer.firstName }} {{ customer.lastName }}</h4>
+                <div class="card-id-row">
+                  <p class="record-id">{{ customer.customerId }}</p>
+                  <span class="index-chip">index {{ $index }}</span>
+                </div>
+                <div class="card-details">
+                  <p>{{ customer.email }}</p>
+                  <p>{{ customer.phone }}</p>
+                  <p>{{ customer.address }}, {{ customer.city }}, {{ customer.state }} {{ customer.zipCode }}</p>
+                </div>
+                <div class="card-footer">
+                  <span class="status">{{ customer.status }}</span>
+                  <button class="delete-btn" (click)="deleteCustomer($index)">Delete</button>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty">No customers left. Add one with the form.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ============ PRODUCTS ============ -->
+    @if (activeTab() === 'products') {
+      <div class="split">
+        <form class="entry-form" (ngSubmit)="addProduct()">
+          <h3>Add a product</h3>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4ProductId">Product ID</label>
+              <input id="p4ProductId" type="text" name="productId"
+                     [(ngModel)]="newProduct.productId" placeholder="PROD-007">
+            </div>
+            <div class="field">
+              <label for="p4ProductSku">SKU</label>
+              <input id="p4ProductSku" type="text" name="sku"
+                     [(ngModel)]="newProduct.sku" placeholder="AC-LP-700">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p4ProductName">Product name</label>
+            <input id="p4ProductName" type="text" name="name"
+                   [(ngModel)]="newProduct.name" placeholder="Laptop Stand">
+          </div>
+          <div class="field">
+            <label for="p4ProductCategory">Category</label>
+            <input id="p4ProductCategory" type="text" name="category"
+                   [(ngModel)]="newProduct.category" placeholder="Accessories">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4ProductPrice">Price ($)</label>
+              <input id="p4ProductPrice" type="number" name="price" min="0" step="0.01"
+                     [(ngModel)]="newProduct.price" placeholder="34.99">
+            </div>
+            <div class="field">
+              <label for="p4ProductStock">Units in stock</label>
+              <input id="p4ProductStock" type="number" name="stockQuantity" min="0" step="1"
+                     [(ngModel)]="newProduct.stockQuantity" placeholder="60">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p4ProductStatus">Status</label>
+            <select id="p4ProductStatus" name="productStatus" [(ngModel)]="newProduct.status">
+              <option value="In Stock">In Stock</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
+          <button class="btn-primary" type="submit">Add product</button>
+        </form>
+
+        <div>
+          <div class="list-header">
+            <h3>Products</h3>
+            <p>{{ products().length }} products &middot; {{ totalInventoryValue() | currency }} total inventory value</p>
+          </div>
+          <div class="card-grid">
+            @for (product of products(); track product.productId) {
+              <div class="card {{ statusClass(product.status) }}">
+                <h4>{{ product.name }}</h4>
+                <div class="card-id-row">
+                  <p class="record-id">{{ product.productId }}</p>
+                  <span class="index-chip">index {{ $index }}</span>
+                </div>
+                <div class="card-details">
+                  <p>{{ product.category }} | SKU {{ product.sku }}</p>
+                  <p>{{ product.price | currency }} each</p>
+                  <p>{{ product.stockQuantity }} units in stock</p>
+                </div>
+                <div class="card-footer">
+                  <span class="status">{{ product.status }}</span>
+                  <button class="delete-btn" (click)="deleteProduct($index)">Delete</button>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty">No products left. Add one with the form.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ============ OFFICES ============ -->
+    @if (activeTab() === 'offices') {
+      <div class="split">
+        <form class="entry-form" (ngSubmit)="addOffice()">
+          <h3>Add an office</h3>
+          <div class="field">
+            <label for="p4OfficeId">Office ID</label>
+            <input id="p4OfficeId" type="text" name="officeId"
+                   [(ngModel)]="newOffice.officeId" placeholder="OFF-05">
+          </div>
+          <div class="field">
+            <label for="p4OfficeName">Office name</label>
+            <input id="p4OfficeName" type="text" name="officeName"
+                   [(ngModel)]="newOffice.officeName" placeholder="Pacific Northwest Office">
+          </div>
+          <div class="field">
+            <label for="p4OfficeAddress">Street address</label>
+            <input id="p4OfficeAddress" type="text" name="officeAddress"
+                   [(ngModel)]="newOffice.address" placeholder="400 Pine St">
+          </div>
+          <div class="field">
+            <label for="p4OfficeCity">City</label>
+            <input id="p4OfficeCity" type="text" name="officeCity"
+                   [(ngModel)]="newOffice.city" placeholder="Seattle">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4OfficeState">State</label>
+              <input id="p4OfficeState" type="text" name="officeState" maxlength="2"
+                     [(ngModel)]="newOffice.state" placeholder="WA">
+            </div>
+            <div class="field">
+              <label for="p4OfficeZip">Zip code</label>
+              <input id="p4OfficeZip" type="text" name="officeZip"
+                     [(ngModel)]="newOffice.zipCode" placeholder="98101">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p4OfficePhone">Phone</label>
+            <input id="p4OfficePhone" type="text" name="officePhone"
+                   [(ngModel)]="newOffice.phone" placeholder="555-5000">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p4OfficeManager">Manager</label>
+              <input id="p4OfficeManager" type="text" name="manager"
+                     [(ngModel)]="newOffice.manager" placeholder="Rosa Diaz">
+            </div>
+            <div class="field">
+              <label for="p4OfficeEmployees">Employees</label>
+              <input id="p4OfficeEmployees" type="number" name="employeeCount" min="0" step="1"
+                     [(ngModel)]="newOffice.employeeCount" placeholder="15">
+            </div>
+          </div>
+          <button class="btn-primary" type="submit">Add office</button>
+        </form>
+
+        <div>
+          <div class="list-header">
+            <h3>Offices</h3>
+            <p>{{ offices().length }} offices &middot; {{ totalEmployees() }} employees total</p>
+          </div>
+          <div class="card-grid">
+            @for (office of offices(); track office.officeId) {
+              <div class="card">
+                <h4>{{ office.officeName }}</h4>
+                <div class="card-id-row">
+                  <p class="record-id">{{ office.officeId }}</p>
+                  <span class="index-chip">index {{ $index }}</span>
+                </div>
+                <div class="card-details">
+                  <p>{{ office.address }}, {{ office.city }}, {{ office.state }} {{ office.zipCode }}</p>
+                  <p>{{ office.phone }}</p>
+                  <p>Managed by {{ office.manager }}</p>
+                </div>
+                <div class="card-footer">
+                  <span class="status">{{ office.employeeCount }} employees</span>
+                  <button class="delete-btn" (click)="deleteOffice($index)">Delete</button>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty">No offices left. Add one with the form.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</section>

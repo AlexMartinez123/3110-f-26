@@ -1,0 +1,30 @@
+<div class="page">
+  <header class="site-head">
+    <h1>Company Directory</h1>
+    <p>
+      Projects 1 through 6 rebuilt as one Angular application. All six components share the same
+      three injected services, so a record created in one, edited in another and deleted in a
+      third is the same record throughout.
+    </p>
+    <nav class="jump">
+      <a href="#p1">1 &middot; Console</a>
+      <a href="#p2">2 &middot; Rendering</a>
+      <a href="#p3">3 &middot; Forms</a>
+      <a href="#p4">4 &middot; Delete</a>
+      <a href="#p5">5 &middot; Edit popup</a>
+      <a href="#p6">6 &middot; Full CRUD</a>
+    </nav>
+  </header>
+
+  <!-- Phase 1: projects 1 to 4 -->
+  <app-p1-console></app-p1-console>
+  <app-p2-dom></app-p2-dom>
+  <app-p3-form></app-p3-form>
+  <app-p4-delete></app-p4-delete>
+
+  <!-- Phase 2: project 5 edits one record in a popup -->
+  <app-p5-modal></app-p5-modal>
+
+  <!-- Phase 2: project 6 folds create, read, update and delete into one screen -->
+  <app-p6-crud></app-p6-crud>
+</div>

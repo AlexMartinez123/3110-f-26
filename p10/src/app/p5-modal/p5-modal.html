@@ -1,0 +1,286 @@
+<section class="panel" id="p5">
+  <header class="panel-head">
+    <h2>Project 5 &mdash; Editing a record in a popup</h2>
+    <p>
+      Press <strong>Edit</strong> on a card. The popup fills with a <em>copy</em> of that record,
+      and only <strong>Save changes</strong> writes it back into the array slot it came from.
+      Cancel throws the copy away, so the record keeps what it had.
+    </p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" [class.active]="activeTab() === 'customers'"
+            (click)="showTab('customers')" role="tab"
+            [attr.aria-selected]="activeTab() === 'customers'">
+      Customers <span class="count">{{ customers().length }}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'products'"
+            (click)="showTab('products')" role="tab"
+            [attr.aria-selected]="activeTab() === 'products'">
+      Products <span class="count">{{ products().length }}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'offices'"
+            (click)="showTab('offices')" role="tab"
+            [attr.aria-selected]="activeTab() === 'offices'">
+      Offices <span class="count">{{ offices().length }}</span>
+    </button>
+  </nav>
+
+  <div class="tab-panel">
+    @if (pageMessage(); as note) {
+      <p class="form-message">{{ note }}</p>
+    }
+
+    @if (activeTab() === 'customers') {
+      <div class="list-header">
+        <h3>Customers</h3>
+        <p>{{ customers().length }} customers on file</p>
+      </div>
+      <div class="card-grid">
+        @for (customer of customers(); track customer.customerId) {
+          <div class="card status-{{ customer.status.toLowerCase() }}">
+            <h4>{{ customer.firstName }} {{ customer.lastName }}</h4>
+            <div class="card-id-row">
+              <p class="record-id">{{ customer.customerId }}</p>
+              <span class="index-chip">index {{ $index }}</span>
+            </div>
+            <div class="card-details">
+              <p>{{ customer.email }}</p>
+              <p>{{ customer.phone }}</p>
+              <p>{{ customer.address }}, {{ customer.city }}, {{ customer.state }} {{ customer.zipCode }}</p>
+            </div>
+            <div class="card-footer">
+              <span class="status">{{ customer.status }}</span>
+              <button class="edit-btn" (click)="openEdit('customers', $index)">Edit</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">No customers to edit.</p>
+        }
+      </div>
+    }
+
+    @if (activeTab() === 'products') {
+      <div class="list-header">
+        <h3>Products</h3>
+        <p>{{ products().length }} products &middot; {{ totalInventoryValue() | currency }} total inventory value</p>
+      </div>
+      <div class="card-grid">
+        @for (product of products(); track product.productId) {
+          <div class="card {{ statusClass(product.status) }}">
+            <h4>{{ product.name }}</h4>
+            <div class="card-id-row">
+              <p class="record-id">{{ product.productId }}</p>
+              <span class="index-chip">index {{ $index }}</span>
+            </div>
+            <div class="card-details">
+              <p>{{ product.category }} | SKU {{ product.sku }}</p>
+              <p>{{ product.price | currency }} each</p>
+              <p>{{ product.stockQuantity }} units in stock</p>
+            </div>
+            <div class="card-footer">
+              <span class="status">{{ product.status }}</span>
+              <button class="edit-btn" (click)="openEdit('products', $index)">Edit</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">No products to edit.</p>
+        }
+      </div>
+    }
+
+    @if (activeTab() === 'offices') {
+      <div class="list-header">
+        <h3>Offices</h3>
+        <p>{{ offices().length }} offices &middot; {{ totalEmployees() }} employees total</p>
+      </div>
+      <div class="card-grid">
+        @for (office of offices(); track office.officeId) {
+          <div class="card">
+            <h4>{{ office.officeName }}</h4>
+            <div class="card-id-row">
+              <p class="record-id">{{ office.officeId }}</p>
+              <span class="index-chip">index {{ $index }}</span>
+            </div>
+            <div class="card-details">
+              <p>{{ office.address }}, {{ office.city }}, {{ office.state }} {{ office.zipCode }}</p>
+              <p>{{ office.phone }}</p>
+              <p>Managed by {{ office.manager }}</p>
+            </div>
+            <div class="card-footer">
+              <span class="status">{{ office.employeeCount }} employees</span>
+              <button class="edit-btn" (click)="openEdit('offices', $index)">Edit</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">No offices to edit.</p>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<!-- ============ THE POPUP ============ -->
+<!-- @if does what toggling display:none used to: when editType() is null the
+     markup is not in the DOM at all. -->
+@if (isOpen()) {
+  <div class="modal-backdrop" (click)="onBackdropClick($event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="p5-modal-title">
+      <h3 id="p5-modal-title">Edit record</h3>
+      <p class="modal-subtitle">
+        Editing <strong>{{ editLabel() }}</strong>, which lives at
+        <code>index {{ editIndex() }}</code> of the array.
+      </p>
+
+      @if (editType() === 'customers') {
+        <div class="modal-fields">
+          <div class="field-row">
+            <div class="field">
+              <label for="p5CustomerId">Customer ID</label>
+              <input id="p5CustomerId" type="text" name="customerId" [(ngModel)]="customerDraft.customerId">
+            </div>
+            <div class="field">
+              <label for="p5CustomerStatus">Status</label>
+              <select id="p5CustomerStatus" name="status" [(ngModel)]="customerDraft.status">
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p5CustomerFirst">First name</label>
+              <input id="p5CustomerFirst" type="text" name="firstName" [(ngModel)]="customerDraft.firstName">
+            </div>
+            <div class="field">
+              <label for="p5CustomerLast">Last name</label>
+              <input id="p5CustomerLast" type="text" name="lastName" [(ngModel)]="customerDraft.lastName">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p5CustomerEmail">Email</label>
+            <input id="p5CustomerEmail" type="email" name="email" [(ngModel)]="customerDraft.email">
+          </div>
+          <div class="field">
+            <label for="p5CustomerPhone">Phone</label>
+            <input id="p5CustomerPhone" type="text" name="phone" [(ngModel)]="customerDraft.phone">
+          </div>
+          <div class="field">
+            <label for="p5CustomerAddress">Street address</label>
+            <input id="p5CustomerAddress" type="text" name="address" [(ngModel)]="customerDraft.address">
+          </div>
+          <div class="field">
+            <label for="p5CustomerCity">City</label>
+            <input id="p5CustomerCity" type="text" name="city" [(ngModel)]="customerDraft.city">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p5CustomerState">State</label>
+              <input id="p5CustomerState" type="text" name="state" maxlength="2" [(ngModel)]="customerDraft.state">
+            </div>
+            <div class="field">
+              <label for="p5CustomerZip">Zip code</label>
+              <input id="p5CustomerZip" type="text" name="zipCode" [(ngModel)]="customerDraft.zipCode">
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (editType() === 'products') {
+        <div class="modal-fields">
+          <div class="field-row">
+            <div class="field">
+              <label for="p5ProductId">Product ID</label>
+              <input id="p5ProductId" type="text" name="productId" [(ngModel)]="productDraft.productId">
+            </div>
+            <div class="field">
+              <label for="p5ProductSku">SKU</label>
+              <input id="p5ProductSku" type="text" name="sku" [(ngModel)]="productDraft.sku">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p5ProductName">Product name</label>
+            <input id="p5ProductName" type="text" name="name" [(ngModel)]="productDraft.name">
+          </div>
+          <div class="field">
+            <label for="p5ProductCategory">Category</label>
+            <input id="p5ProductCategory" type="text" name="category" [(ngModel)]="productDraft.category">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p5ProductPrice">Price ($)</label>
+              <input id="p5ProductPrice" type="number" name="price" min="0" step="0.01" [(ngModel)]="productDraft.price">
+            </div>
+            <div class="field">
+              <label for="p5ProductStock">Units in stock</label>
+              <input id="p5ProductStock" type="number" name="stockQuantity" min="0" step="1" [(ngModel)]="productDraft.stockQuantity">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p5ProductStatus">Status</label>
+            <select id="p5ProductStatus" name="productStatus" [(ngModel)]="productDraft.status">
+              <option value="In Stock">In Stock</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+      }
+
+      @if (editType() === 'offices') {
+        <div class="modal-fields">
+          <div class="field">
+            <label for="p5OfficeId">Office ID</label>
+            <input id="p5OfficeId" type="text" name="officeId" [(ngModel)]="officeDraft.officeId">
+          </div>
+          <div class="field">
+            <label for="p5OfficeName">Office name</label>
+            <input id="p5OfficeName" type="text" name="officeName" [(ngModel)]="officeDraft.officeName">
+          </div>
+          <div class="field">
+            <label for="p5OfficeAddress">Street address</label>
+            <input id="p5OfficeAddress" type="text" name="officeAddress" [(ngModel)]="officeDraft.address">
+          </div>
+          <div class="field">
+            <label for="p5OfficeCity">City</label>
+            <input id="p5OfficeCity" type="text" name="officeCity" [(ngModel)]="officeDraft.city">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p5OfficeState">State</label>
+              <input id="p5OfficeState" type="text" name="officeState" maxlength="2" [(ngModel)]="officeDraft.state">
+            </div>
+            <div class="field">
+              <label for="p5OfficeZip">Zip code</label>
+              <input id="p5OfficeZip" type="text" name="officeZip" [(ngModel)]="officeDraft.zipCode">
+            </div>
+          </div>
+          <div class="field">
+            <label for="p5OfficePhone">Phone</label>
+            <input id="p5OfficePhone" type="text" name="officePhone" [(ngModel)]="officeDraft.phone">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="p5OfficeManager">Manager</label>
+              <input id="p5OfficeManager" type="text" name="manager" [(ngModel)]="officeDraft.manager">
+            </div>
+            <div class="field">
+              <label for="p5OfficeEmployees">Employees</label>
+              <input id="p5OfficeEmployees" type="number" name="employeeCount" min="0" step="1" [(ngModel)]="officeDraft.employeeCount">
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (modalMessage(); as note) {
+        <p class="form-message error">{{ note }}</p>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="saveEdit()">Save changes</button>
+      </div>
+    </div>
+  </div>
+}
