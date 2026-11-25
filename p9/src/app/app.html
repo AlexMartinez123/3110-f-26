@@ -1,0 +1,27 @@
+<div class="page">
+  <header class="site-head">
+    <h1>Company Directory</h1>
+    <p>
+      Projects 1 through 4 rebuilt as one Angular application. The four components below share
+      three injected services, so a record added or deleted in one is visible in all of them.
+    </p>
+    <nav class="jump">
+      <a href="#p1">1 &middot; Console</a>
+      <a href="#p2">2 &middot; Rendering</a>
+      <a href="#p3">3 &middot; Forms</a>
+      <a href="#p4">4 &middot; Delete</a>
+    </nav>
+  </header>
+
+  <!-- Project 1: reads the services and prints the reports to the console -->
+  <app-p1-console></app-p1-console>
+
+  <!-- Project 2: declarative rendering with @for, replacing createElement -->
+  <app-p2-dom></app-p2-dom>
+
+  <!-- Project 3: two-way bound forms writing into the services -->
+  <app-p3-form></app-p3-form>
+
+  <!-- Project 4: delete by $index, with undo -->
+  <app-p4-delete></app-p4-delete>
+</div>

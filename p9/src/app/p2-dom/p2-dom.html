@@ -1,0 +1,77 @@
+<section class="panel" id="p2">
+  <header class="panel-head">
+    <h2>Project 2 &mdash; Writing the data into the page</h2>
+    <p>
+      Project 2 built every card with <code>document.createElement</code>,
+      <code>innerHTML</code> and <code>appendChild</code>. Angular's
+      <code>&#64;for</code> block replaces all of it: describe one card, and the
+      framework renders one per record and keeps them in step with the Signal.
+    </p>
+  </header>
+
+  <!-- CUSTOMERS -->
+  <div class="list-header">
+    <h3>Customers</h3>
+    <p>{{ customers().length }} customers on file</p>
+  </div>
+  <div class="card-grid">
+    @for (customer of customers(); track customer.customerId) {
+      <div class="card status-{{ customer.status.toLowerCase() }}">
+        <h4>{{ customer.firstName }} {{ customer.lastName }}</h4>
+        <p class="record-id">{{ customer.customerId }}</p>
+        <div class="card-details">
+          <p>{{ customer.email }}</p>
+          <p>{{ customer.phone }}</p>
+          <p>{{ customer.address }}, {{ customer.city }}, {{ customer.state }} {{ customer.zipCode }}</p>
+        </div>
+        <span class="status">{{ customer.status }}</span>
+      </div>
+    } @empty {
+      <p class="empty">No customers to show.</p>
+    }
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="list-header">
+    <h3>Products</h3>
+    <p>{{ products().length }} products &middot; {{ totalInventoryValue() | currency }} total inventory value</p>
+  </div>
+  <div class="card-grid">
+    @for (product of products(); track product.productId) {
+      <div class="card {{ statusClass(product.status) }}">
+        <h4>{{ product.name }}</h4>
+        <p class="record-id">{{ product.productId }}</p>
+        <div class="card-details">
+          <p>{{ product.category }} | SKU {{ product.sku }}</p>
+          <p>{{ product.price | currency }} each</p>
+          <p>{{ product.stockQuantity }} units in stock</p>
+        </div>
+        <span class="status">{{ product.status }}</span>
+      </div>
+    } @empty {
+      <p class="empty">No products to show.</p>
+    }
+  </div>
+
+  <!-- OFFICES -->
+  <div class="list-header">
+    <h3>Offices</h3>
+    <p>{{ offices().length }} offices &middot; {{ totalEmployees() }} employees total</p>
+  </div>
+  <div class="card-grid">
+    @for (office of offices(); track office.officeId) {
+      <div class="card">
+        <h4>{{ office.officeName }}</h4>
+        <p class="record-id">{{ office.officeId }}</p>
+        <div class="card-details">
+          <p>{{ office.address }}, {{ office.city }}, {{ office.state }} {{ office.zipCode }}</p>
+          <p>{{ office.phone }}</p>
+          <p>Managed by {{ office.manager }}</p>
+        </div>
+        <span class="status">{{ office.employeeCount }} employees</span>
+      </div>
+    } @empty {
+      <p class="empty">No offices to show.</p>
+    }
+  </div>
+</section>
